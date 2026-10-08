@@ -57,20 +57,8 @@ inicio/
 │   │   └── test_evidencia_fallo_controlado_call_20261008_081330_874074.png
 │   ├── logs/
 │   │   ├── .gitkeep
-│   │   ├── execution.log
-│   │   ├── incidencia_tc06.log
-│   │   └── incidencia_tc08.log
-│   ├── diagnostico_click/
-│   │   ├── antes/
-│   │   ├── despues/
-│   │   ├── resultados.csv
-│   │   ├── suite_consola.log
-│   │   ├── suite_consola.xml
-│   │   ├── suite_html.log
-│   │   └── suite_html.xml
-│   ├── reporte.html
-│   ├── reporte_incidencia_tc06.html
-│   └── reporte_incidencia_tc08.html
+│   │   └── execution.log
+│   └── reporte.html
 ├── conftest.py
 ├── requirements.txt
 ├── pytest.ini
@@ -80,7 +68,7 @@ inicio/
 
 El árbol muestra los archivos fuente y las evidencias. También existen carpetas locales de entorno y caché, como `venv`, `.tools`, `.pytest_cache` y `__pycache__`, excluidas del repositorio.
 
-Las carpetas `reports/diagnostico_click/antes` y `despues` contienen los logs y XML de cada ronda, más su `resumen.csv`; no se expanden todos esos archivos repetitivos en el árbol. Los paquetes Python contienen archivos llamados `__init__.py`, con dos guiones bajos a cada lado.
+Los paquetes Python contienen archivos llamados `__init__.py`, con dos guiones bajos a cada lado. Las ejecuciones diagnósticas repetidas se resumen más abajo; sus XML, CSV y logs redundantes no forman parte de la entrega.
 
 - [pages/](./pages/): locators, acciones y lecturas de cada página. Las acciones del detalle permanecen en `InventoryPage` para mantener simple la estructura.
 - [tests/](./tests/): preparación específica, acciones y validaciones de los ocho casos.
@@ -199,6 +187,10 @@ Si Chrome no llegó a abrirse o ya se cerró, puede no haber captura. Si falla e
 
 Se conserva una [captura de un fallo controlado](./reports/screenshots/test_evidencia_fallo_controlado_call_20261008_081330_874074.png) exclusivamente para demostrar que el mecanismo funciona. Se produjo con un test temporal que comparaba `Products` con un texto incorrecto a propósito. El test temporal fue eliminado; esta imagen **no representa un fallo de los ocho casos funcionales**. El reporte y el log finales corresponden a una ejecución posterior de la suite completa.
 
+La selección publicada contiene siete archivos de evidencia: el HTML final, el log final, tres capturas (una controlada y dos históricas) y dos `.gitkeep`. Se retiraron 71 archivos redundantes de diagnóstico e incidencias y se conservaron únicamente como archivo local ignorado, fuera del historial de la rama a publicar.
+
+Para preparar el log final se sustituyó la ruta absoluta del proyecto por `.` en la línea de inicio de ejecución. No se alteraron fechas, resultados ni acciones. El HTML final y las capturas se conservaron sin modificaciones. Si se regeneran evidencias, corresponde revisar nuevamente sus metadatos antes de publicarlas.
+
 [.gitignore](./.gitignore) excluye entornos, cachés y configuraciones locales de IDE; permite incluir el reporte, los logs y las capturas como parte de la entrega.
 
 ## Estrategia de localización
@@ -256,7 +248,7 @@ Después del ajuste se ejecutó una muestra de tamaño fijado de antemano, sin p
 | Suite completa con consola | 1 ronda | 8 tests | 0 |
 | Suite completa con HTML | 1 ronda | 8 tests | 0 |
 
-Los [resultados agregados](./reports/diagnostico_click/resultados.csv) se calcularon desde los XML de Pytest. En ese archivo TC-06 y TC-08 tienen 15 ejecuciones posteriores cada uno porque incluyen las cinco rondas del archivo completo. Los [logs y XML anteriores](./reports/diagnostico_click/antes/) y [posteriores](./reports/diagnostico_click/despues/) conservan cada ronda.
+Los conteos se verificaron contra los XML de Pytest antes de simplificar las evidencias. TC-06 y TC-08 acumularon 15 ejecuciones posteriores cada uno al incluir las cinco rondas del archivo completo. Los archivos detallados de cada ronda no se publican para evitar duplicaciones y metadatos locales innecesarios; esta tabla conserva el resumen de la validación realizada.
 
 La muestra aporta confianza en la sincronización actual, pero no demuestra una solución causal de las incidencias históricas: **la causa original sigue sin confirmarse**.
 
@@ -264,7 +256,7 @@ La muestra aporta confianza en la sincronización actual, pero no demuestra una 
 
 - **Comportamiento observado:** una ejecución intermedia terminó con `1 failed, 7 passed`. TC-06 agotó los 10 segundos de espera del badge después del clic para agregar el primer producto. La captura muestra el carrito vacío y el botón todavía en `Add to cart`.
 - **Resultado esperado:** aparece el badge con valor `1`; al abrir el carrito, figura el mismo producto seleccionado en el catálogo.
-- **Evidencia disponible:** [captura automática](./reports/screenshots/test_agregar_producto_carrito_call_20261008_081732_409094.png), [reporte de la ejecución intermedia](./reports/reporte_incidencia_tc06.html) y [log de esa ejecución](./reports/logs/incidencia_tc06.log), separados de las evidencias finales.
+- **Evidencia conservada en la entrega:** [captura automática histórica de TC-06](./reports/screenshots/test_agregar_producto_carrito_call_20261008_081732_409094.png). El reporte intermedio y su log se retiraron de la versión publicada para reducir redundancia; sus originales permanecen en el archivo local ignorado.
 - **Intento de reproducción anterior al ajuste:** TC-06 pasó individualmente y después la suite completa pasó dos veces. No se modificaron asserts, selectores ni esperas para obtener esos resultados. La muestra posterior al ajuste se detalla arriba.
 - **Estado actual:** no reproducible en los intentos posteriores; pendiente de causa confirmada. No se atribuye a Selenium, al sitio ni a la conexión sin evidencia suficiente. Se conserva como observación QA histórica, no como un fallo actual confirmado ni como una corrección demostrada.
 
@@ -274,6 +266,6 @@ Esta incidencia es distinta de la prueba deliberada del mecanismo de capturas. E
 
 - **Comportamiento observado:** en una validación anterior con reporte HTML, TC-08 agotó los 10 segundos esperando el badge después de agregar un producto, antes de abrir el carrito o eliminarlo. La ejecución terminó con `1 failed, 7 passed`; TC-06 pasó en esa misma corrida.
 - **Resultado esperado:** el producto pasa a `Remove`, aparece el badge `1` y el test puede continuar con su validación de eliminación.
-- **Evidencia disponible:** [reporte anterior de TC-08](./reports/reporte_incidencia_tc08.html), [log anterior](./reports/logs/incidencia_tc08.log) y [captura automática](./reports/screenshots/test_eliminar_producto_carrito_call_20261008_083013_229910.png). La imagen muestra el carrito vacío y el botón en `Add to cart`.
+- **Evidencia conservada en la entrega:** [captura automática histórica de TC-08](./reports/screenshots/test_eliminar_producto_carrito_call_20261008_083013_229910.png). La imagen muestra el carrito vacío y el botón en `Add to cart`. El reporte anterior y su log se retiraron de la versión publicada; sus originales permanecen en el archivo local ignorado.
 - **Intentos posteriores:** cinco ejecuciones instrumentadas antes del ajuste, diez individuales después, cinco dentro de las rondas de carrito y dos suites completas, todas aprobadas.
 - **Estado:** no reproducido durante este diagnóstico; causa sin confirmar. Comparte el punto de espera con TC-06, pero no está demostrado que ambos eventos tengan la misma causa.

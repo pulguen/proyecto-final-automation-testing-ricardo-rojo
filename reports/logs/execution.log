@@ -1,0 +1,66 @@
+2026-10-08 08:50:05 - INFO - Inicio de ejecución en .
+2026-10-08 08:50:05 - INFO - Iniciando tests/test_cart.py::test_agregar_producto_carrito
+2026-10-08 08:50:05 - INFO - Abriendo Chrome (headless=True)
+2026-10-08 08:50:07 - INFO - Iniciando sesión con standard_user para preparar el inventario
+2026-10-08 08:50:08 - INFO - Inventario listo: https://www.saucedemo.com/inventory.html
+2026-10-08 08:50:08 - INFO - ANTES click: url=https://www.saucedemo.com/inventory.html producto='Sauce Labs Backpack' texto='Add to cart' visible=True habilitado=True
+2026-10-08 08:50:08 - INFO - DESPUES click: url=https://www.saucedemo.com/inventory.html add=[] remove=[('Remove', True)] badge=[('1', True)] original=STALE
+2026-10-08 08:50:08 - INFO - Producto agregado confirmado por Remove: Sauce Labs Backpack
+2026-10-08 08:50:08 - INFO - Resultado tests/test_cart.py::test_agregar_producto_carrito: PASSED
+2026-10-08 08:50:08 - INFO - Cerrando Chrome para test_agregar_producto_carrito
+2026-10-08 08:50:10 - INFO - Finalizando tests/test_cart.py::test_agregar_producto_carrito
+2026-10-08 08:50:10 - INFO - Iniciando tests/test_cart.py::test_agregar_dos_productos
+2026-10-08 08:50:10 - INFO - Abriendo Chrome (headless=True)
+2026-10-08 08:50:12 - INFO - Iniciando sesión con standard_user para preparar el inventario
+2026-10-08 08:50:13 - INFO - Inventario listo: https://www.saucedemo.com/inventory.html
+2026-10-08 08:50:13 - INFO - ANTES click: url=https://www.saucedemo.com/inventory.html producto='Sauce Labs Backpack' texto='Add to cart' visible=True habilitado=True
+2026-10-08 08:50:13 - INFO - DESPUES click: url=https://www.saucedemo.com/inventory.html add=[] remove=[('Remove', True)] badge=[('1', True)] original=STALE
+2026-10-08 08:50:13 - INFO - Producto agregado confirmado por Remove: Sauce Labs Backpack
+2026-10-08 08:50:13 - INFO - ANTES click: url=https://www.saucedemo.com/inventory.html producto='Sauce Labs Bike Light' texto='Add to cart' visible=True habilitado=True
+2026-10-08 08:50:13 - INFO - DESPUES click: url=https://www.saucedemo.com/inventory.html add=[] remove=[('Remove', True)] badge=[('2', True)] original=STALE
+2026-10-08 08:50:13 - INFO - Producto agregado confirmado por Remove: Sauce Labs Bike Light
+2026-10-08 08:50:14 - INFO - Resultado tests/test_cart.py::test_agregar_dos_productos: PASSED
+2026-10-08 08:50:14 - INFO - Cerrando Chrome para test_agregar_dos_productos
+2026-10-08 08:50:16 - INFO - Finalizando tests/test_cart.py::test_agregar_dos_productos
+2026-10-08 08:50:16 - INFO - Iniciando tests/test_cart.py::test_eliminar_producto_carrito
+2026-10-08 08:50:16 - INFO - Abriendo Chrome (headless=True)
+2026-10-08 08:50:19 - INFO - Iniciando sesión con standard_user para preparar el inventario
+2026-10-08 08:50:20 - INFO - Inventario listo: https://www.saucedemo.com/inventory.html
+2026-10-08 08:50:20 - INFO - ANTES click: url=https://www.saucedemo.com/inventory.html producto='Sauce Labs Backpack' texto='Add to cart' visible=True habilitado=True
+2026-10-08 08:50:20 - INFO - DESPUES click: url=https://www.saucedemo.com/inventory.html add=[] remove=[('Remove', True)] badge=[('1', True)] original=STALE
+2026-10-08 08:50:20 - INFO - Producto agregado confirmado por Remove: Sauce Labs Backpack
+2026-10-08 08:50:20 - INFO - Resultado tests/test_cart.py::test_eliminar_producto_carrito: PASSED
+2026-10-08 08:50:20 - INFO - Cerrando Chrome para test_eliminar_producto_carrito
+2026-10-08 08:50:22 - INFO - Finalizando tests/test_cart.py::test_eliminar_producto_carrito
+2026-10-08 08:50:22 - INFO - Iniciando tests/test_inventory.py::test_catalogo_productos
+2026-10-08 08:50:22 - INFO - Abriendo Chrome (headless=True)
+2026-10-08 08:50:24 - INFO - Iniciando sesión con standard_user para preparar el inventario
+2026-10-08 08:50:24 - INFO - Inventario listo: https://www.saucedemo.com/inventory.html
+2026-10-08 08:50:25 - INFO - Resultado tests/test_inventory.py::test_catalogo_productos: PASSED
+2026-10-08 08:50:25 - INFO - Cerrando Chrome para test_catalogo_productos
+2026-10-08 08:50:27 - INFO - Finalizando tests/test_inventory.py::test_catalogo_productos
+2026-10-08 08:50:27 - INFO - Iniciando tests/test_inventory.py::test_elementos_interfaz
+2026-10-08 08:50:27 - INFO - Abriendo Chrome (headless=True)
+2026-10-08 08:50:28 - INFO - Iniciando sesión con standard_user para preparar el inventario
+2026-10-08 08:50:29 - INFO - Inventario listo: https://www.saucedemo.com/inventory.html
+2026-10-08 08:50:29 - INFO - Resultado tests/test_inventory.py::test_elementos_interfaz: PASSED
+2026-10-08 08:50:29 - INFO - Cerrando Chrome para test_elementos_interfaz
+2026-10-08 08:50:31 - INFO - Finalizando tests/test_inventory.py::test_elementos_interfaz
+2026-10-08 08:50:31 - INFO - Iniciando tests/test_inventory.py::test_detalle_primer_producto
+2026-10-08 08:50:31 - INFO - Abriendo Chrome (headless=True)
+2026-10-08 08:50:32 - INFO - Iniciando sesión con standard_user para preparar el inventario
+2026-10-08 08:50:33 - INFO - Inventario listo: https://www.saucedemo.com/inventory.html
+2026-10-08 08:50:33 - INFO - Resultado tests/test_inventory.py::test_detalle_primer_producto: PASSED
+2026-10-08 08:50:33 - INFO - Cerrando Chrome para test_detalle_primer_producto
+2026-10-08 08:50:35 - INFO - Finalizando tests/test_inventory.py::test_detalle_primer_producto
+2026-10-08 08:50:35 - INFO - Iniciando tests/test_login.py::test_login_exitoso
+2026-10-08 08:50:35 - INFO - Abriendo Chrome (headless=True)
+2026-10-08 08:50:37 - INFO - Resultado tests/test_login.py::test_login_exitoso: PASSED
+2026-10-08 08:50:37 - INFO - Cerrando Chrome para test_login_exitoso
+2026-10-08 08:50:39 - INFO - Finalizando tests/test_login.py::test_login_exitoso
+2026-10-08 08:50:39 - INFO - Iniciando tests/test_login.py::test_login_credenciales_invalidas
+2026-10-08 08:50:39 - INFO - Abriendo Chrome (headless=True)
+2026-10-08 08:50:41 - INFO - Resultado tests/test_login.py::test_login_credenciales_invalidas: PASSED
+2026-10-08 08:50:41 - INFO - Cerrando Chrome para test_login_credenciales_invalidas
+2026-10-08 08:50:43 - INFO - Finalizando tests/test_login.py::test_login_credenciales_invalidas
+2026-10-08 08:50:43 - INFO - Fin de ejecución: código 0; tests con fallos: 0
