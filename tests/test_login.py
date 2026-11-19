@@ -1,7 +1,12 @@
 """TC-01 y TC-02: validaciones del login, ambos de prioridad alta."""
 
+import pytest
+
 from pages.inventory_page import InventoryPage
 from pages.login_page import LoginPage
+
+
+pytestmark = pytest.mark.ui
 
 
 def test_login_exitoso(driver):

@@ -1,5 +1,10 @@
 """TC-03, TC-04 y TC-05: catálogo, interfaz y detalle de producto."""
 
+import pytest
+
+pytestmark = pytest.mark.ui
+
+
 def test_catalogo_productos(inventory_page):
     """TC-03 (alta): el catálogo muestra productos con nombre y precio."""
     assert inventory_page.get_browser_title() == "Swag Labs", (

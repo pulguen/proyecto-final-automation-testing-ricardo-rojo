@@ -9,7 +9,7 @@ import re
 logger = logging.getLogger(__name__)
 
 
-def save_failure_screenshot(driver, test_name, phase):
+def save_failure_screenshot(driver, test_name, phase, screenshots_dir):
     """Guardar una captura si Chrome sigue disponible; un error solo se registra."""
     if driver is None:
         logger.warning("Sin captura de %s: no hay una instancia de driver", test_name)
@@ -20,7 +20,7 @@ def save_failure_screenshot(driver, test_name, phase):
             logger.warning("Sin captura de %s: no hay una ventana activa", test_name)
             return None
 
-        folder = Path(__file__).resolve().parents[1] / "reports" / "screenshots"
+        folder = Path(screenshots_dir)
         folder.mkdir(parents=True, exist_ok=True)
         safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", test_name)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")

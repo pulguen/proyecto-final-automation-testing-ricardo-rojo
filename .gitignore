@@ -6,3 +6,6 @@ __pycache__/
 .pytest_cache/
 .vscode/
 .idea/
+
+# Evidencias nuevas por ejecucion; las historicas se conservan versionadas.
+/reports/runs/

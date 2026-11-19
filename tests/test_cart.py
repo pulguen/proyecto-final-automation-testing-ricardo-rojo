@@ -1,6 +1,11 @@
 """TC-06, TC-07 y TC-08: incorporación y eliminación de productos del carrito."""
 
+import pytest
+
 from pages.cart_page import CartPage
+
+
+pytestmark = pytest.mark.ui
 
 
 def test_agregar_producto_carrito(driver, inventory_page):

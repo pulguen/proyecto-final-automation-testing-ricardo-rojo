@@ -2,6 +2,8 @@
 
 import logging
 import os
+from datetime import datetime
+from tempfile import mkdtemp
 from pathlib import Path
 
 import pytest
@@ -10,13 +12,63 @@ from selenium import webdriver
 from pages.inventory_page import InventoryPage
 from pages.login_page import LoginPage
 from utils.helpers import save_failure_screenshot
+from utils.config import (
+    SELENIUM_CACHE_DIR,
+    get_base_url,
+    get_evidence_root,
+    get_selenium_timeout,
+    resolve_path,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
+def _new_output_file(value, default):
+    path = resolve_path(value) if value else default
+    if path.exists():
+        raise pytest.UsageError(f"La salida ya existe; elegi otro archivo: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return str(path)
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_configure(config):
+    # Configurar las rutas antes de que logging y pytest-html abran sus archivos.
+    try:
+        get_base_url()
+        get_selenium_timeout()
+        output_root = get_evidence_root(config.getoption("output_dir"))
+    except ValueError as error:
+        raise pytest.UsageError(str(error)) from error
+    output_root.mkdir(parents=True, exist_ok=True)
+    prefix = datetime.now().strftime("%Y%m%d_%H%M%S_")
+    run_dir = Path(mkdtemp(prefix=prefix, dir=output_root))
+    (run_dir / "screenshots").mkdir()
+    config._evidence_dir = run_dir
+    config.option.log_file = _new_output_file(
+        config.getoption("log_file") or config.getini("log_file"),
+        run_dir / "logs" / "execution.log",
+    )
+    config.option.htmlpath = _new_output_file(
+        config.getoption("htmlpath"), run_dir / "reporte.html",
+    )
+    if config.option.log_file == config.option.htmlpath:
+        raise pytest.UsageError("El log y el reporte HTML deben usar archivos diferentes")
+    config.option.self_contained_html = True
+
+
+def pytest_report_header(config):
+    return [
+        f"Evidencias: {config._evidence_dir}",
+        f"Log: {config.option.log_file}",
+        f"HTML: {config.option.htmlpath}",
+    ]
+
+
 def pytest_sessionstart(session):
     logger.info("Inicio de ejecución en %s", session.config.rootpath)
+    logger.info("Evidencias de esta ejecucion: %s", session.config._evidence_dir)
 
 
 def pytest_runtest_logstart(nodeid, location):
@@ -34,7 +86,10 @@ def pytest_runtest_makereport(item, call):
             "FALLO en %s (fase %s)\n%s",
             item.nodeid, report.when, report.longreprtext,
         )
-        save_failure_screenshot(item.funcargs.get("driver"), item.name, report.when)
+        save_failure_screenshot(
+            item.funcargs.get("driver"), item.name, report.when,
+            item.config._evidence_dir / "screenshots",
+        )
     elif report.when == "call" or report.skipped:
         logger.info("Resultado %s: %s", item.nodeid, report.outcome.upper())
 
@@ -52,6 +107,11 @@ def pytest_sessionfinish(session, exitstatus):
 
 def pytest_addoption(parser):
     parser.addoption(
+        "--output-dir",
+        default=None,
+        help="Directorio base de evidencias; prevalece sobre EVIDENCE_DIR.",
+    )
+    parser.addoption(
         "--headless",
         action="store_true",
         help="Ejecutar Chrome sin abrir una ventana visible.",
@@ -61,7 +121,7 @@ def pytest_addoption(parser):
 @pytest.fixture
 def driver(request):
     # Selenium Manager guarda el driver dentro del proyecto, no en el perfil del usuario.
-    cache = Path(__file__).parent / ".tools" / "selenium"
+    cache = SELENIUM_CACHE_DIR
     cache.mkdir(parents=True, exist_ok=True)
     os.environ["SE_CACHE_PATH"] = str(cache)
 
