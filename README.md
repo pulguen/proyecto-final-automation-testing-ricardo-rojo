@@ -1,6 +1,8 @@
-# Pre-Entrega Automation Testing - SauceDemo
+# Trabajo Final Integrador - Automation Testing SauceDemo
 
 **Autor:** Ricardo Rojo
+
+El proyecto evoluciona desde la pre-entrega. Esta etapa centraliza la configuración y separa las evidencias por ejecución, conservando los ocho casos UI originales.
 
 ## Descripción
 
@@ -32,10 +34,10 @@ Las tres dependencias directas están en [requirements.txt](./requirements.txt).
 
 ## Estructura del proyecto
 
-La carpeta local actual se llama `inicio`. El nombre previsto para el repositorio público de GitHub es `pre-entrega-automation-testing-ricardo-rojo`; todavía no se creó el remoto ni se publicó el proyecto.
+El proyecto actual es `proyecto-final-automation-testing-ricardo-rojo`. El remoto `origin` apunta al [repositorio del trabajo final](https://github.com/pulguen/proyecto-final-automation-testing-ricardo-rojo) y `upstream` conserva la referencia a la pre-entrega.
 
 ```text
-inicio/
+proyecto-final-automation-testing-ricardo-rojo/
 ├── pages/
 │   ├── __init__.py
 │   ├── login_page.py
@@ -48,6 +50,7 @@ inicio/
 │   └── test_cart.py
 ├── utils/
 │   ├── __init__.py
+│   ├── config.py
 │   └── helpers.py
 ├── reports/
 │   ├── screenshots/
@@ -58,7 +61,8 @@ inicio/
 │   ├── logs/
 │   │   ├── .gitkeep
 │   │   └── execution.log
-│   └── reporte.html
+│   ├── reporte.html
+│   └── runs/                 # ejecuciones nuevas, ignoradas por Git
 ├── conftest.py
 ├── requirements.txt
 ├── pytest.ini
@@ -120,7 +124,7 @@ Instalar las dependencias con el Python del entorno activo:
 python -m pip install -r requirements.txt
 ```
 
-En este equipo Python no estaba en PATH y se preparó una copia local dentro de `.tools/python` junto con el entorno `venv`. Para utilizar el entorno ya creado sin activarlo:
+Si el entorno no está activado, después de crearlo e instalar las dependencias puede ejecutarse directamente:
 
 ```powershell
 .\venv\Scripts\python.exe -m pytest -v --headless
@@ -130,44 +134,59 @@ En otro equipo se puede crear un entorno nuevo siguiendo los pasos anteriores; n
 
 ## Ejecución
 
-Todos los tests:
+Todos los tests, con Chrome visible por defecto:
 
 ```powershell
 python -m pytest -v
 ```
 
-Mostrar también la salida de consola:
+Solo UI, sin ventana y mostrando la salida de consola:
 
 ```powershell
-python -m pytest -v -s
+python -m pytest -v -s -m ui --headless
 ```
 
-Ejecutar un archivo:
+Ejecutar un archivo o un caso individual:
 
 ```powershell
-python -m pytest tests/test_login.py -v
+python -m pytest tests/test_login.py -v --headless
+python -m pytest tests/test_cart.py::test_agregar_dos_productos -v --headless
 ```
 
-Ejecutar un caso individual:
+Cada ejecución genera automáticamente un HTML autocontenido, un log y una carpeta de screenshots en un directorio único. Pytest muestra sus rutas en la cabecera. Ya no es necesario indicar `--html`.
+
+Las opciones `--html` y `--log-file` permiten nombres personalizados, pero se rechaza cualquier archivo de salida que ya exista. Esto protege también el HTML y el log históricos de la pre-entrega.
+
+## Configuración del framework
+
+[utils/config.py](./utils/config.py) utiliza solamente la biblioteca estándar. Las variables se leen del entorno; no se necesita un archivo `.env` ni una dependencia adicional.
+
+| Variable | Valor por defecto | Uso |
+| --- | --- | --- |
+| `BASE_URL` | `https://www.saucedemo.com/` | URL de entrada a SauceDemo |
+| `SELENIUM_TIMEOUT` | `10` | Segundos de espera explícita en los tres Page Objects |
+| `EVIDENCE_DIR` | `reports/runs` | Directorio base de las nuevas ejecuciones |
+
+La URL debe ser HTTP/HTTPS y el timeout debe ser positivo y finito. Los valores inválidos detienen la ejecución con un mensaje claro, sin sustituirlos silenciosamente.
+
+Ejemplo en PowerShell, limitado a la terminal actual:
 
 ```powershell
-python -m pytest tests/test_cart.py::test_agregar_dos_productos -v
+$env:BASE_URL = "https://www.saucedemo.com/"
+$env:SELENIUM_TIMEOUT = "10"
+$env:EVIDENCE_DIR = "reports/runs/entorno"
+python -m pytest -v -m ui --headless
 ```
 
-Generar el reporte HTML autocontenido:
+`--output-dir` tiene prioridad sobre `EVIDENCE_DIR`. Se aceptan rutas absolutas; las relativas se interpretan desde la raíz del proyecto:
 
 ```powershell
-python -m pytest -v --html=reports/reporte.html --self-contained-html
+python -m pytest -v -m ui --headless --output-dir reports/runs/otra-ubicacion
 ```
 
-El comando básico `python -m pytest -v --html=reports/reporte.html` también está disponible. Se prefiere `--self-contained-html` para compartir el reporte en un único archivo.
+Dentro del directorio base se crea una subcarpeta con fecha, hora y un sufijo único. Contiene `reporte.html`, `logs/execution.log` y `screenshots/`. No se reutiliza una carpeta de ejecución anterior. Las salidas bajo `reports/runs/` están ignoradas por Git; al elegir otro destino dentro del repositorio se deben revisar sus exclusiones antes de versionar.
 
-Por defecto se abre Chrome visible. Se puede agregar `--headless` a cualquiera de estos comandos para ejecutar sin ventana. La validación de esta entrega se realizó en ese modo:
-
-```powershell
-python -m pytest -v -s --headless
-python -m pytest -v --headless --html=reports/reporte.html --self-contained-html
-```
+Los markers `ui` y `api` están registrados con `--strict-markers`. Los ocho tests llevan `pytest.mark.ui` a nivel de módulo, sin cambios en sus asserts. `api` está reservado; todavía no hay pruebas API. Se conserva Chrome visible por defecto y `--headless` para ejecutar sin ventana.
 
 ## Independencia de las pruebas
 
@@ -177,9 +196,13 @@ Cada caso prepara sus propios datos. Ningún test depende de que otro haya agreg
 
 ## Evidencias
 
-- [Reporte HTML](./reports/reporte.html): resumen de resultados generado con pytest-html. Se puede abrir directamente en un navegador.
-- [Capturas de fallos](./reports/screenshots/): imágenes PNG generadas automáticamente, únicamente cuando Pytest informa un fallo y hay un navegador disponible.
-- [Log de ejecución](./reports/logs/execution.log): inicio, resultado y finalización de cada test, preparación del navegador, errores y rutas de capturas. Usa el formato `fecha - nivel - mensaje` y se reemplaza en cada ejecución para representar la última corrida.
+Las evidencias versionadas de la pre-entrega se mantienen como históricas y no se sobrescriben:
+
+- [Reporte HTML histórico](./reports/reporte.html): resultado de la pre-entrega.
+- [Capturas históricas](./reports/screenshots/): prueba controlada e incidencias documentadas.
+- [Log histórico](./reports/logs/execution.log): registro de la ejecución final de la pre-entrega.
+
+Las nuevas ejecuciones usan el directorio único descrito arriba. Su log mantiene el formato `fecha - nivel - mensaje`, y los screenshots automáticos se guardan en el subdirectorio `screenshots` de esa misma ejecución. Todavía no se incrustan ni se enlazan las capturas dentro del HTML.
 
 El hook `pytest_runtest_makereport` recibe el resultado de las fases de preparación, ejecución y cierre. Cuando detecta un fallo, llama a la función de [helpers.py](./utils/helpers.py), que verifica la sesión y las ventanas, crea la carpeta si hace falta y guarda la captura. El nombre incluye test, fase y fecha/hora con microsegundos para evitar sobrescrituras.
 
@@ -203,7 +226,7 @@ En esta suite se usan ID, CSS basado en atributos `data-test` y CLASS_NAME para 
 
 Se utilizan `WebDriverWait` y `expected_conditions` para visibilidad, clics, navegación y desaparición de elementos. Para el badge se espera primero su visibilidad y luego la igualdad exacta con el valor esperado mediante una condición sencilla. No se utiliza `time.sleep()` para sincronizar las pruebas.
 
-Al agregar un producto, se obtiene el ID de su botón, se vuelve a localizar mediante `element_to_be_clickable` y se hace un único clic normal. Después se espera la visibilidad del botón `Remove` correspondiente como confirmación de que la aplicación procesó la acción. Solo entonces continúa la espera del badge. Se conservan los 10 segundos de cada espera; no hay clics repetidos ni clics por JavaScript.
+Al agregar un producto, se obtiene el ID de su botón, se vuelve a localizar mediante `element_to_be_clickable` y se hace un único clic normal. Después se espera la visibilidad del botón `Remove` correspondiente como confirmación de que la aplicación procesó la acción. Solo entonces continúa la espera del badge. Por defecto se conservan los 10 segundos de cada espera, configurables mediante `SELENIUM_TIMEOUT`; no hay clics repetidos ni clics por JavaScript.
 
 Al vaciar el carrito, SauceDemo elimina el badge del DOM. Por eso se espera su ausencia y no el texto `0`.
 
@@ -219,7 +242,7 @@ Las dos validaciones completas posteriores al ajuste de sincronización, una con
 8 passed
 ```
 
-El [reporte principal](./reports/reporte.html) y el [log de ejecución](./reports/logs/execution.log) corresponden a la última suite completa. Las incidencias anteriores se conservan por separado. No se modificaron los ocho tests funcionales ni sus asserts.
+El [reporte histórico](./reports/reporte.html) y el [log histórico](./reports/logs/execution.log) corresponden a la última suite completa conservada de la pre-entrega. Las incidencias anteriores se conservan por separado. No se modificaron los ocho tests funcionales ni sus asserts.
 
 La duración puede variar según el equipo y la conexión. Con `-s`, TC-03 muestra:
 
@@ -260,7 +283,7 @@ La muestra aporta confianza en la sincronización actual, pero no demuestra una 
 - **Intento de reproducción anterior al ajuste:** TC-06 pasó individualmente y después la suite completa pasó dos veces. No se modificaron asserts, selectores ni esperas para obtener esos resultados. La muestra posterior al ajuste se detalla arriba.
 - **Estado actual:** no reproducible en los intentos posteriores; pendiente de causa confirmada. No se atribuye a Selenium, al sitio ni a la conexión sin evidencia suficiente. Se conserva como observación QA histórica, no como un fallo actual confirmado ni como una corrección demostrada.
 
-Esta incidencia es distinta de la prueba deliberada del mecanismo de capturas. El reporte principal corresponde a la última validación completa.
+Esta incidencia es distinta de la prueba deliberada del mecanismo de capturas. El reporte versionado corresponde a la validación histórica de la pre-entrega; los nuevos reportes se guardan por ejecución.
 
 ### Incidencia histórica de TC-08
 

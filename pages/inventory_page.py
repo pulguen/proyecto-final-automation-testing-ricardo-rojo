@@ -7,6 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from utils.config import get_selenium_timeout
+
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ class InventoryPage:
 
     def __init__(self, driver):
         self.driver = driver
-        self.wait = WebDriverWait(driver, 10)
+        self.wait = WebDriverWait(driver, get_selenium_timeout())
         self._last_add = None
 
     def wait_until_loaded(self):
