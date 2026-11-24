@@ -7,6 +7,7 @@ from tempfile import mkdtemp
 from pathlib import Path
 
 import pytest
+import requests
 from selenium import webdriver
 
 from pages.inventory_page import InventoryPage
@@ -14,9 +15,10 @@ from pages.login_page import LoginPage
 from utils.helpers import save_failure_screenshot
 from utils.config import (
     SELENIUM_CACHE_DIR,
-    get_base_url,
+    get_api_base_url,
+    get_api_timeout,
+    get_api_response_limit,
     get_evidence_root,
-    get_selenium_timeout,
     resolve_path,
 )
 
@@ -36,8 +38,6 @@ def _new_output_file(value, default):
 def pytest_configure(config):
     # Configurar las rutas antes de que logging y pytest-html abran sus archivos.
     try:
-        get_base_url()
-        get_selenium_timeout()
         output_root = get_evidence_root(config.getoption("output_dir"))
     except ValueError as error:
         raise pytest.UsageError(str(error)) from error
@@ -86,10 +86,11 @@ def pytest_runtest_makereport(item, call):
             "FALLO en %s (fase %s)\n%s",
             item.nodeid, report.when, report.longreprtext,
         )
-        save_failure_screenshot(
-            item.funcargs.get("driver"), item.name, report.when,
-            item.config._evidence_dir / "screenshots",
-        )
+        if "driver" in item.fixturenames:
+            save_failure_screenshot(
+                item.funcargs.get("driver"), item.name, report.when,
+                item.config._evidence_dir / "screenshots",
+            )
     elif report.when == "call" or report.skipped:
         logger.info("Resultado %s: %s", item.nodeid, report.outcome.upper())
 
@@ -153,3 +154,39 @@ def inventory_page(driver):
     page.wait_until_loaded()
     logger.info("Inventario listo: %s", driver.current_url)
     return page
+
+
+@pytest.fixture
+def api_session():
+    """Una sesión HTTP aislada por test; se cierra incluso ante fallos."""
+    with requests.Session() as session:
+        yield session
+
+
+@pytest.fixture
+def api_request(api_session):
+    """Enviar solicitudes con timeout y registrar su resultado sin registrar payloads."""
+    base_url = get_api_base_url()
+    timeout = get_api_timeout()
+    response_limit = get_api_response_limit()
+
+    def send(method, endpoint, **kwargs):
+        try:
+            response = api_session.request(method, base_url + endpoint, timeout=timeout, **kwargs)
+        except requests.Timeout as error:
+            logger.error("API %s %s: timeout tras %s segundos", method, endpoint, timeout)
+            pytest.fail(f"Timeout en {method} {endpoint}: {error}", pytrace=False)
+        except requests.ConnectionError as error:
+            logger.error("API %s %s: error de conexión: %s", method, endpoint, error)
+            pytest.fail(f"Error de conexión en {method} {endpoint}: {error}", pytrace=False)
+        except requests.RequestException as error:
+            logger.error("API %s %s: error HTTP de transporte: %s", method, endpoint, error)
+            pytest.fail(f"Error de transporte en {method} {endpoint}: {error}", pytrace=False)
+        elapsed = response.elapsed.total_seconds()
+        logger.info("API %s %s: status=%s duracion=%.3fs", method, endpoint, response.status_code, elapsed)
+        assert elapsed <= response_limit, (
+            f"{method} {endpoint}: {elapsed:.3f}s supera el límite de {response_limit}s"
+        )
+        return response
+
+    return send
