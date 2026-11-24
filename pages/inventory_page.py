@@ -2,7 +2,11 @@
 
 import logging
 
-from selenium.common.exceptions import StaleElementReferenceException, WebDriverException
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    StaleElementReferenceException,
+    WebDriverException,
+)
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
@@ -68,6 +72,18 @@ class InventoryPage:
     def add_product(self, index):
         """Agregar un producto según su lugar en el catálogo, empezando en cero."""
         product = self.get_visible_products()[index]
+        self._add_product(product)
+
+    def add_product_by_name(self, product_name):
+        """Seleccionar por nombre exacto, sin fijar su posición en el catálogo."""
+        for product in self.get_visible_products():
+            if product.find_element(*self.PRODUCT_NAME).text.strip() == product_name:
+                self._add_product(product)
+                return
+        raise NoSuchElementException(f"Producto no disponible en el catálogo: {product_name!r}")
+
+    def _add_product(self, product):
+        """Compartir el clic y la confirmación de Remove entre ambas formas de selección."""
         product_name = product.find_element(*self.PRODUCT_NAME).text
         add_button = product.find_element(*self.ADD_BUTTON)
         add_id = add_button.get_attribute("id")
