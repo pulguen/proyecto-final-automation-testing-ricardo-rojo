@@ -2,13 +2,13 @@
 
 **Autor:** Ricardo Rojo
 
-El proyecto evoluciona desde la pre-entrega. Esta etapa centraliza la configuración y separa las evidencias por ejecución, conservando los ocho casos UI originales.
+El proyecto evoluciona desde la pre-entrega. El framework cuenta con configuración centralizada, evidencias por ejecución y Data-Driven Testing con JSON, CSV y `pytest.mark.parametrize`, aplicando la clase 10 y conservando los ocho casos UI originales.
 
 ## Descripción
 
 Suite automatizada sobre [SauceDemo](https://www.saucedemo.com/), desarrollada como pre-entrega del curso de Automation Testing. Aplica conceptos trabajados hasta las clases 6, 7 y 8: login, catálogo, navegación al detalle y carrito, con casos positivos y negativos.
 
-El alcance actual incluye ocho pruebas funcionales independientes. No incluye checkout, usuarios especiales, pruebas entre distintos navegadores ni CI/CD.
+El alcance actual incluye ocho pruebas originales y ocho escenarios parametrizados independientes (cinco de login y tres de carrito): 16 casos UI en total. No incluye checkout, pruebas entre distintos navegadores ni CI/CD. El usuario bloqueado se cubre como escenario negativo de login.
 
 ## Objetivos
 
@@ -27,7 +27,7 @@ El alcance actual incluye ocho pruebas funcionales independientes. No incluye ch
 - Pytest.
 - pytest-html.
 - Google Chrome.
-- `logging`, `pathlib`, `datetime` y `re` de la biblioteca estándar de Python.
+- `logging`, `pathlib`, `datetime`, `re`, `json` y `csv` de la biblioteca estándar de Python.
 - Git para el control de versiones local; GitHub como destino previsto de la entrega.
 
 Las tres dependencias directas están en [requirements.txt](./requirements.txt). Se mantienen los rangos de versiones que ya funcionaban. No se agregaron dependencias para logs ni capturas.
@@ -38,6 +38,9 @@ El proyecto actual es `proyecto-final-automation-testing-ricardo-rojo`. El remot
 
 ```text
 proyecto-final-automation-testing-ricardo-rojo/
+├── data/
+│   ├── login_cases.json
+│   └── cart_products.csv
 ├── pages/
 │   ├── __init__.py
 │   ├── login_page.py
@@ -47,10 +50,13 @@ proyecto-final-automation-testing-ricardo-rojo/
 │   ├── __init__.py
 │   ├── test_login.py
 │   ├── test_inventory.py
-│   └── test_cart.py
+│   ├── test_cart.py
+│   ├── test_login_parametrizado.py
+│   └── test_cart_parametrizado.py
 ├── utils/
 │   ├── __init__.py
 │   ├── config.py
+│   ├── data_loader.py
 │   └── helpers.py
 ├── reports/
 │   ├── screenshots/
@@ -75,8 +81,9 @@ El árbol muestra los archivos fuente y las evidencias. También existen carpeta
 Los paquetes Python contienen archivos llamados `__init__.py`, con dos guiones bajos a cada lado. Las ejecuciones diagnósticas repetidas se resumen más abajo; sus XML, CSV y logs redundantes no forman parte de la entrega.
 
 - [pages/](./pages/): locators, acciones y lecturas de cada página. Las acciones del detalle permanecen en `InventoryPage` para mantener simple la estructura.
-- [tests/](./tests/): preparación específica, acciones y validaciones de los ocho casos.
-- [utils/](./utils/): función auxiliar para guardar capturas de forma segura.
+- [tests/](./tests/): preparación, acciones y validaciones de los casos originales y parametrizados.
+- [data/](./data/): escenarios JSON y productos CSV, separados de la lógica de los tests.
+- [utils/](./utils/): configuración, lectores de datos y función auxiliar para guardar capturas.
 - [reports/](./reports/): reporte HTML, logs e imágenes de evidencia.
 - [conftest.py](./conftest.py): fixtures compartidas y hooks de Pytest para registrar resultados y capturar fallos.
 - [pytest.ini](./pytest.ini): descubrimiento de tests, ruta temporal local y configuración de logging.
@@ -186,7 +193,91 @@ python -m pytest -v -m ui --headless --output-dir reports/runs/otra-ubicacion
 
 Dentro del directorio base se crea una subcarpeta con fecha, hora y un sufijo único. Contiene `reporte.html`, `logs/execution.log` y `screenshots/`. No se reutiliza una carpeta de ejecución anterior. Las salidas bajo `reports/runs/` están ignoradas por Git; al elegir otro destino dentro del repositorio se deben revisar sus exclusiones antes de versionar.
 
-Los markers `ui` y `api` están registrados con `--strict-markers`. Los ocho tests llevan `pytest.mark.ui` a nivel de módulo, sin cambios en sus asserts. `api` está reservado; todavía no hay pruebas API. Se conserva Chrome visible por defecto y `--headless` para ejecutar sin ventana.
+Los markers `ui` y `api` están registrados con `--strict-markers`. Los tests UI, originales y parametrizados, llevan `pytest.mark.ui` a nivel de módulo. Los ocho casos originales conservan sus asserts. `api` está reservado; todavía no hay pruebas API. Se conserva Chrome visible por defecto y `--headless` para ejecutar sin ventana.
+
+## Data-Driven Testing (clase 10)
+
+La lógica del test se escribe una vez y `pytest.mark.parametrize` la ejecuta con cada registro de un archivo externo. Los casos originales se conservan como regresión; los nuevos están en [test_login_parametrizado.py](./tests/test_login_parametrizado.py) y [test_cart_parametrizado.py](./tests/test_cart_parametrizado.py).
+
+[utils/data_loader.py](./utils/data_loader.py) contiene `load_json_cases` y `load_csv_cases`, implementados con la biblioteca estándar. Ambos resuelven rutas desde la raíz del proyecto, aceptan UTF-8 con o sin BOM y devuelven listas de diccionarios. El CSV conserva sus valores como texto.
+
+Los lectores rechazan archivos inexistentes o ilegibles, formatos incorrectos, listas sin casos, campos obligatorios ausentes o nulos e IDs vacíos o repetidos. También rechazan encabezados CSV duplicados y filas con columnas de más o de menos. Los errores identifican el archivo y, cuando corresponde, el registro o la posición del error. No se agregaron dependencias.
+
+### Login desde JSON
+
+[login_cases.json](./data/login_cases.json) contiene una lista de objetos con estos campos:
+
+| Campo | Contenido |
+| --- | --- |
+| `id` | Identificador descriptivo y único dentro del archivo |
+| `username` | Usuario de demostración de SauceDemo; puede ser vacío para un caso negativo |
+| `password` | Contraseña de demostración; puede ser vacía para un caso negativo |
+| `expected_result` | `success` o `error` |
+| `expected_error` | Mensaje exacto esperado; cadena vacía cuando el login es válido |
+
+Ejemplo de estructura de un registro:
+
+```json
+{
+  "id": "usuario-bloqueado",
+  "username": "locked_out_user",
+  "password": "secret_sauce",
+  "expected_result": "error",
+  "expected_error": "Epic sadface: Sorry, this user has been locked out."
+}
+```
+
+Los cinco escenarios son credenciales válidas, contraseña incorrecta, usuario bloqueado, usuario vacío y contraseña vacía. Los campos están siempre presentes; el test declara explícitamente cuáles permiten cadenas vacías mediante `allow_empty_fields`. Los mensajes esperados se verificaron en el sitio antes de incorporarlos a los datos.
+
+### Carrito desde CSV
+
+[cart_products.csv](./data/cart_products.csv) utiliza los encabezados `id,product_name,expected_badge`. Ejemplo:
+
+```csv
+id,product_name,expected_badge
+mochila,Sauce Labs Backpack,1
+```
+
+La selección actual incluye mochila, camiseta roja y onesie. Cada escenario agrega un solo producto desde una sesión nueva, por eso espera el badge `1` y exactamente ese nombre en el carrito.
+
+`InventoryPage.add_product_by_name` busca por texto exacto dentro de los productos visibles. Comparte con la selección por índice el mismo método interno de clic y confirmación de `Remove`; no duplica esa lógica ni construye selectores a partir del nombre. Las validaciones permanecen en los tests.
+
+### Incorporar nuevos escenarios
+
+1. Agregar un objeto a la lista JSON o una fila al CSV, conservando sus campos/encabezados.
+2. Elegir un `id` único y descriptivo. Pytest lo muestra entre corchetes en consola y reportes.
+3. Definir resultados esperados a partir del comportamiento requerido. Para un error de login, incluir el mensaje exacto; para carrito, usar un nombre existente en el catálogo.
+4. Ejecutar primero la colección y después las pruebas. No hace falta duplicar funciones de test.
+
+Usar únicamente datos públicos de demostración. No guardar contraseñas personales, tokens ni credenciales reales en estos archivos.
+
+### Ejecutar los escenarios
+
+Colección de toda la suite UI:
+
+```powershell
+python -m pytest --collect-only -q -m ui
+```
+
+Solo los tests parametrizados:
+
+```powershell
+python -m pytest tests/test_login_parametrizado.py tests/test_cart_parametrizado.py -v --headless
+```
+
+Un escenario específico en PowerShell:
+
+```powershell
+python -m pytest "tests/test_login_parametrizado.py::test_login_parametrizado[usuario-bloqueado]" -v --headless
+```
+
+Suite completa, con evidencias nuevas separadas:
+
+```powershell
+python -m pytest -v -s -m ui --headless --output-dir reports/runs/validacion-parametrizacion
+```
+
+Cada parámetro es un test independiente: recibe un navegador nuevo mediante `driver`; los casos de carrito reutilizan `inventory_page` y realizan su propio login. Los datos se leen durante la colección y no se modifican en los tests.
 
 ## Independencia de las pruebas
 
@@ -235,6 +326,20 @@ Al vaciar el carrito, SauceDemo elimina el badge del DOM. Por eso se espera su a
 Los locators, las acciones y las lecturas de las páginas están en [pages/](./pages/). Las validaciones con `assert` permanecen en [tests/](./tests/). Esta separación permite ajustar un selector sin reescribir los casos y mantiene cada test centrado en el comportamiento que verifica.
 
 ## Resultado actual
+
+La colección reconoció **16 casos** sin errores de importación ni lectura. La ejecución UI en headless terminó con **16 passed en 62,16 segundos**:
+
+| Grupo | Aprobados | Fallos / errores |
+| --- | --- | --- |
+| Ocho casos originales | 8 | 0 / 0 |
+| Login parametrizado desde JSON | 5 | 0 / 0 |
+| Carrito parametrizado desde CSV | 3 | 0 / 0 |
+
+Además se comprobaron 17 entradas inválidas del lector y la lectura desde otro directorio, incluidos BOM UTF-8 y celdas CSV con comas. Los registros de estas comprobaciones son locales y no forman parte de los 16 casos UI.
+
+El HTML y el log de esta etapa se generaron en un directorio nuevo dentro de `reports/runs/validacion-parametrizacion/`, ignorado por Git. La duración puede variar entre equipos y ejecuciones.
+
+### Línea base histórica de la pre-entrega
 
 Las dos validaciones completas posteriores al ajuste de sincronización, una con salida de consola y otra con reporte HTML autocontenido, terminaron con:
 
