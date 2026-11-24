@@ -8,7 +8,7 @@ El proyecto evoluciona desde la pre-entrega. El framework cuenta con configuraci
 
 Suite automatizada sobre [SauceDemo](https://www.saucedemo.com/), desarrollada como pre-entrega del curso de Automation Testing. Aplica conceptos trabajados hasta las clases 6, 7 y 8: login, catálogo, navegación al detalle y carrito, con casos positivos y negativos.
 
-El alcance actual incluye 16 casos UI y ocho pruebas de API independientes: 24 casos en total. No incluye checkout, pruebas entre distintos navegadores ni CI/CD. El usuario bloqueado se cubre como escenario negativo de login.
+El alcance actual incluye 16 casos UI y ocho pruebas de API independientes: 24 casos en total. No incluye checkout ni pruebas entre distintos navegadores. La ejecución CI/CD se realiza mediante GitHub Actions. El usuario bloqueado se cubre como escenario negativo de login.
 
 ## Objetivos
 
@@ -39,6 +39,9 @@ El proyecto actual es `proyecto-final-automation-testing-ricardo-rojo`. El remot
 
 ```text
 proyecto-final-automation-testing-ricardo-rojo/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 ├── data/
 │   ├── login_cases.json
 │   └── cart_products.csv
@@ -89,6 +92,7 @@ Los paquetes Python contienen archivos llamados `__init__.py`, con dos guiones b
 - [data/](./data/): escenarios JSON y productos CSV, separados de la lógica de los tests.
 - [utils/](./utils/): configuración, lectores de datos y función auxiliar para guardar capturas.
 - [reports/](./reports/): reporte HTML, logs e imágenes de evidencia.
+- [.github/workflows/](./.github/workflows/): workflow de integración continua para separar las pruebas API y UI.
 - [conftest.py](./conftest.py): fixtures compartidas y hooks de Pytest para registrar resultados y capturar fallos.
 - [pytest.ini](./pytest.ini): descubrimiento de tests, ruta temporal local y configuración de logging.
 
@@ -456,3 +460,20 @@ Esta incidencia es distinta de la prueba deliberada del mecanismo de capturas. E
 - **Evidencia conservada en la entrega:** [captura automática histórica de TC-08](./reports/screenshots/test_eliminar_producto_carrito_call_20261008_083013_229910.png). La imagen muestra el carrito vacío y el botón en `Add to cart`. El reporte anterior y su log se retiraron de la versión publicada; sus originales permanecen en el archivo local ignorado.
 - **Intentos posteriores:** cinco ejecuciones instrumentadas antes del ajuste, diez individuales después, cinco dentro de las rondas de carrito y dos suites completas, todas aprobadas.
 - **Estado:** no reproducido durante este diagnóstico; causa sin confirmar. Comparte el punto de espera con TC-06, pero no está demostrado que ambos eventos tengan la misma causa.
+
+## Integración continua con GitHub Actions
+
+El workflow [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) se ejecuta en estos eventos:
+
+- `push` sobre `main` y ramas `feature/**`.
+- `pull_request` dirigido a `main`.
+- `workflow_dispatch` para iniciarlo manualmente desde GitHub.
+
+La configuración usa runners `ubuntu-latest`, Python 3.12 y permisos mínimos de lectura del contenido. Se mantienen dos jobs independientes:
+
+- **API:** instala las dependencias, ejecuta `pip check` y corre los ocho casos con `python -m pytest -v -m api`. No inicia Chrome.
+- **UI:** verifica Chrome disponible en el runner, instala las dependencias, deja que Selenium Manager resuelva ChromeDriver y corre los 16 casos con `python -m pytest -v -m ui --headless`.
+
+Cada job usa un directorio de evidencias separado (`reports/runs/api` o `reports/runs/ui`). El paso de `actions/upload-artifact` se ejecuta con `if: always()` y conserva los reportes HTML, logs y screenshots disponibles durante 14 días, incluso cuando las pruebas fallan. El fallo del job se mantiene visible: la subida de evidencias no convierte una ejecución fallida en exitosa.
+
+Para ejecutar el workflow manualmente, abrí la pestaña **Actions**, seleccioná **CI** y utilizá **Run workflow**. Una ejecución exitosa indica que el job correspondiente terminó correctamente; una ejecución fallida debe revisarse junto con los logs del job y el artefacto `reportes-api` o `reportes-ui`. Dentro del artefacto, el `reporte.html` de la carpeta de ejecución muestra el resultado y las capturas UI embebidas cuando estuvieron disponibles; los PNG también se conservan en `screenshots/`.
