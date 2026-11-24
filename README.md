@@ -348,11 +348,15 @@ Las evidencias versionadas de la pre-entrega se mantienen como históricas y no 
 - [Capturas históricas](./reports/screenshots/): prueba controlada e incidencias documentadas.
 - [Log histórico](./reports/logs/execution.log): registro de la ejecución final de la pre-entrega.
 
-Las nuevas ejecuciones usan el directorio único descrito arriba. Su log mantiene el formato `fecha - nivel - mensaje`, y los screenshots automáticos se guardan en el subdirectorio `screenshots` de esa misma ejecución. Todavía no se incrustan ni se enlazan las capturas dentro del HTML.
+Las nuevas ejecuciones usan el directorio único descrito arriba. Su log mantiene el formato `fecha - nivel - mensaje`, y los screenshots automáticos se guardan en el subdirectorio `screenshots` de esa misma ejecución. Cuando falla una prueba UI, la misma captura PNG se convierte a Base64 y se agrega al resultado individual mediante `pytest_html.extras.image`; por eso el HTML autocontenido contiene la imagen y puede compartirse sin depender de rutas externas. Las pruebas API no tienen `driver`, conservan su error en el HTML y no generan capturas.
 
 El hook `pytest_runtest_makereport` recibe el resultado de las fases de preparación, ejecución y cierre. Cuando detecta un fallo, llama a la función de [helpers.py](./utils/helpers.py), que verifica la sesión y las ventanas, crea la carpeta si hace falta y guarda la captura. El nombre incluye test, fase y fecha/hora con microsegundos para evitar sobrescrituras.
 
 Si Chrome no llegó a abrirse o ya se cerró, puede no haber captura. Si falla el guardado, se escribe una advertencia en el log y se conserva el fallo original del test. Los asserts y Page Objects no contienen llamadas manuales para guardar screenshots.
+
+Para consultar una evidencia, abrí el `reporte.html` de la carpeta de ejecución y expandí el detalle del caso fallido; la imagen aparece asociada a ese test. El PNG también queda disponible en `screenshots/` con un nombre que incluye test, fase y fecha/hora. Se validó el mecanismo con un test UI temporal que generó un PNG embebido mediante `data:image/png;base64,...` y conservó el `AssertionError`. Ese test se eliminó después de la comprobación y no forma parte de los resultados funcionales.
+
+Durante esta etapa se observó nuevamente una intermitencia en TC-08: el botón `Add to cart` no llegó a cambiar a `Remove` y el badge esperado no apareció. El mecanismo guardó el PNG y lo incorporó al HTML con el error original. TC-08 pasó al repetirlo de forma aislada y la regresión UI posterior terminó con 16 aprobados; no se modificó la lógica del test y la causa continúa sin confirmarse. Este episodio se conserva como incidencia observada, no como un fallo permanente ni como una solución demostrada.
 
 Se conserva una [captura de un fallo controlado](./reports/screenshots/test_evidencia_fallo_controlado_call_20261008_081330_874074.png) exclusivamente para demostrar que el mecanismo funciona. Se produjo con un test temporal que comparaba `Products` con un texto incorrecto a propósito. El test temporal fue eliminado; esta imagen **no representa un fallo de los ocho casos funcionales**. El reporte y el log finales corresponden a una ejecución posterior de la suite completa.
 
