@@ -2,11 +2,13 @@
 
 import logging
 import os
+import base64
 from datetime import datetime
 from tempfile import mkdtemp
 from pathlib import Path
 
 import pytest
+from pytest_html import extras
 import requests
 from selenium import webdriver
 
@@ -87,10 +89,31 @@ def pytest_runtest_makereport(item, call):
             item.nodeid, report.when, report.longreprtext,
         )
         if "driver" in item.fixturenames:
-            save_failure_screenshot(
+            screenshot_path = save_failure_screenshot(
                 item.funcargs.get("driver"), item.name, report.when,
                 item.config._evidence_dir / "screenshots",
             )
+            if screenshot_path is not None:
+                try:
+                    image_base64 = base64.b64encode(
+                        Path(screenshot_path).read_bytes()
+                    ).decode("ascii")
+                    report.extras = getattr(report, "extras", [])
+                    report.extras.append(
+                        extras.image(
+                            image_base64,
+                            name=Path(screenshot_path).name,
+                        )
+                    )
+                    logger.info(
+                        "Captura embebida en el reporte HTML: %s",
+                        screenshot_path,
+                    )
+                except Exception as error:
+                    logger.warning(
+                        "No se pudo incorporar la captura al reporte HTML: %s",
+                        error,
+                    )
     elif report.when == "call" or report.skipped:
         logger.info("Resultado %s: %s", item.nodeid, report.outcome.upper())
 
