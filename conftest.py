@@ -4,6 +4,7 @@ import logging
 import os
 import base64
 from datetime import datetime
+from html import escape
 from tempfile import mkdtemp
 from pathlib import Path
 
@@ -20,12 +21,16 @@ from utils.config import (
     get_api_base_url,
     get_api_timeout,
     get_api_response_limit,
+    DEFAULT_REPORT_DESCRIPTION,
+    DEFAULT_REPORT_TITLE,
     get_evidence_root,
     resolve_path,
 )
 
 
 logger = logging.getLogger(__name__)
+_report_title = DEFAULT_REPORT_TITLE
+_report_description = DEFAULT_REPORT_DESCRIPTION
 
 
 def _new_output_file(value, default):
@@ -38,6 +43,13 @@ def _new_output_file(value, default):
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_configure(config):
+    global _report_title, _report_description
+
+    _report_title = config.getini("html_report_title").strip() or DEFAULT_REPORT_TITLE
+    _report_description = (
+        config.getini("html_report_description").strip() or DEFAULT_REPORT_DESCRIPTION
+    )
+
     # Configurar las rutas antes de que logging y pytest-html abran sus archivos.
     try:
         output_root = get_evidence_root(config.getoption("output_dir"))
@@ -58,6 +70,16 @@ def pytest_configure(config):
     if config.option.log_file == config.option.htmlpath:
         raise pytest.UsageError("El log y el reporte HTML deben usar archivos diferentes")
     config.option.self_contained_html = True
+
+
+def pytest_html_report_title(report):
+    """Personalizar el título mediante el hook público de pytest-html 4.x."""
+    report.title = _report_title
+
+
+def pytest_html_results_summary(prefix, summary, postfix, session):
+    """Agregar la descripción configurada al resumen visible del reporte."""
+    prefix.append(f"<p>{escape(_report_description)}</p>")
 
 
 def pytest_report_header(config):
@@ -130,6 +152,18 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 def pytest_addoption(parser):
+    parser.addini(
+        "html_report_title",
+        type="string",
+        default=DEFAULT_REPORT_TITLE,
+        help="Título visible de los reportes HTML.",
+    )
+    parser.addini(
+        "html_report_description",
+        type="string",
+        default=DEFAULT_REPORT_DESCRIPTION,
+        help="Descripción visible en el resumen de los reportes HTML.",
+    )
     parser.addoption(
         "--output-dir",
         default=None,
