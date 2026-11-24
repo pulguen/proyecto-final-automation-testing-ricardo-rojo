@@ -8,7 +8,7 @@ El proyecto evoluciona desde la pre-entrega. El framework cuenta con configuraci
 
 Suite automatizada sobre [SauceDemo](https://www.saucedemo.com/), desarrollada como pre-entrega del curso de Automation Testing. Aplica conceptos trabajados hasta las clases 6, 7 y 8: login, catálogo, navegación al detalle y carrito, con casos positivos y negativos.
 
-El alcance actual incluye ocho pruebas originales y ocho escenarios parametrizados independientes (cinco de login y tres de carrito): 16 casos UI en total. No incluye checkout, pruebas entre distintos navegadores ni CI/CD. El usuario bloqueado se cubre como escenario negativo de login.
+El alcance actual incluye 16 casos UI y ocho pruebas de API independientes: 24 casos en total. No incluye checkout, pruebas entre distintos navegadores ni CI/CD. El usuario bloqueado se cubre como escenario negativo de login.
 
 ## Objetivos
 
@@ -24,13 +24,14 @@ El alcance actual incluye ocho pruebas originales y ocho escenarios parametrizad
 
 - Python 3.12, versión utilizada para validar esta entrega.
 - Selenium WebDriver y Selenium Manager para resolver ChromeDriver.
+- Requests para solicitudes HTTP a JSONPlaceholder.
 - Pytest.
 - pytest-html.
 - Google Chrome.
 - `logging`, `pathlib`, `datetime`, `re`, `json` y `csv` de la biblioteca estándar de Python.
-- Git para el control de versiones local; GitHub como destino previsto de la entrega.
+- Git y GitHub para el control de versiones; el proyecto está publicado en el repositorio indicado abajo.
 
-Las tres dependencias directas están en [requirements.txt](./requirements.txt). Se mantienen los rangos de versiones que ya funcionaban. No se agregaron dependencias para logs ni capturas.
+Las cuatro dependencias directas están en [requirements.txt](./requirements.txt). Requests se agrega para API; los logs y capturas no requieren dependencias adicionales.
 
 ## Estructura del proyecto
 
@@ -47,6 +48,9 @@ proyecto-final-automation-testing-ricardo-rojo/
 │   ├── inventory_page.py
 │   └── cart_page.py
 ├── tests/
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── test_posts_api.py
 │   ├── __init__.py
 │   ├── test_login.py
 │   ├── test_inventory.py
@@ -173,8 +177,11 @@ Las opciones `--html` y `--log-file` permiten nombres personalizados, pero se re
 | `BASE_URL` | `https://www.saucedemo.com/` | URL de entrada a SauceDemo |
 | `SELENIUM_TIMEOUT` | `10` | Segundos de espera explícita en los tres Page Objects |
 | `EVIDENCE_DIR` | `reports/runs` | Directorio base de las nuevas ejecuciones |
+| `API_BASE_URL` | `https://jsonplaceholder.typicode.com` | URL base para las pruebas API |
+| `API_TIMEOUT` | `10` | Timeout de cada solicitud HTTP, en segundos |
+| `API_RESPONSE_LIMIT` | `10` | Límite de duración de respuesta, en segundos |
 
-La URL debe ser HTTP/HTTPS y el timeout debe ser positivo y finito. Los valores inválidos detienen la ejecución con un mensaje claro, sin sustituirlos silenciosamente.
+Las URL deben ser HTTP/HTTPS y los tiempos deben ser positivos y finitos. Los valores inválidos se rechazan cuando se usa la configuración correspondiente. Las pruebas API no dependen de `BASE_URL` ni de `SELENIUM_TIMEOUT`, que corresponden a UI.
 
 Ejemplo en PowerShell, limitado a la terminal actual:
 
@@ -193,7 +200,55 @@ python -m pytest -v -m ui --headless --output-dir reports/runs/otra-ubicacion
 
 Dentro del directorio base se crea una subcarpeta con fecha, hora y un sufijo único. Contiene `reporte.html`, `logs/execution.log` y `screenshots/`. No se reutiliza una carpeta de ejecución anterior. Las salidas bajo `reports/runs/` están ignoradas por Git; al elegir otro destino dentro del repositorio se deben revisar sus exclusiones antes de versionar.
 
-Los markers `ui` y `api` están registrados con `--strict-markers`. Los tests UI, originales y parametrizados, llevan `pytest.mark.ui` a nivel de módulo. Los ocho casos originales conservan sus asserts. `api` está reservado; todavía no hay pruebas API. Se conserva Chrome visible por defecto y `--headless` para ejecutar sin ventana.
+Los markers `ui` y `api` están registrados con `--strict-markers`. Los tests UI llevan `pytest.mark.ui` y los de JSONPlaceholder usan `pytest.mark.api`. Los ocho casos originales conservan sus asserts. Se conserva Chrome visible por defecto y `--headless` para ejecutar sin ventana.
+
+## Pruebas API (clases 11 y 12)
+
+Las pruebas de [tests/api/test_posts_api.py](./tests/api/test_posts_api.py) verifican el contrato HTTP de [JSONPlaceholder](https://jsonplaceholder.typicode.com/), una API pública de datos simulados. Usan Requests y Pytest, sin Selenium ni Page Object Model. Cada test recibe una `requests.Session` nueva y cerrada al finalizar.
+
+| Caso | Solicitud | Validaciones principales |
+| --- | --- | --- |
+| API-01 | GET `/posts/1` | 200, JSON, campos y tipos, ID 1 y tiempo |
+| API-02 | GET `/posts` | 200, lista no vacía y estructura de todos los posts |
+| API-03 | GET `/posts?userId=1` | 200, filtro enviado con `params` y usuario en todos los resultados |
+| API-04 | GET `/posts/999999` | 404 y JSON vacío, según lo observado |
+| API-05 | POST `/posts` | 201, ID generado y campos enviados |
+| API-06 | PUT `/posts/1` | 200 y datos reemplazados reflejados |
+| API-07 | PATCH `/posts/1` | 200 y título modificado |
+| API-08 | DELETE `/posts/1` | 200 y objeto JSON vacío `{}` |
+
+Las operaciones POST, PUT, PATCH y DELETE son simuladas: JSONPlaceholder no persiste esas modificaciones. Los tests verifican la respuesta inmediata y no hacen GET posterior para afirmar persistencia. Los valores 404 y 200/`{}` de GET inexistente y DELETE se comprobaron mediante solicitudes exploratorias reales.
+
+Todas las solicitudes usan `timeout=API_TIMEOUT`. Se mide `response.elapsed.total_seconds()` y se compara con `API_RESPONSE_LIMIT`; el límite inicial de 10 segundos es configurable y puede verse afectado por la red o el servicio público. Los logs registran método, endpoint, status y duración, sin payloads. Errores de conexión y timeout producen un fallo claro, sin reintentos.
+
+En PowerShell se pueden configurar independientemente de SauceDemo:
+
+```powershell
+$env:API_BASE_URL = "https://jsonplaceholder.typicode.com"
+$env:API_TIMEOUT = "10"
+$env:API_RESPONSE_LIMIT = "10"
+```
+
+Comandos desde la raíz del proyecto:
+
+```powershell
+python -m pytest --collect-only -q
+python -m pytest -v -m api
+python -m pytest -v -m ui --headless
+python -m pytest -v --headless
+```
+
+La selección `api` no solicita la fixture `driver` ni inicia Chrome. Usa las mismas carpetas de ejecución, logs y reportes HTML del framework; si falla no se intenta obtener una captura de pantalla. El hook conserva el comportamiento anterior para fallos UI con WebDriver disponible.
+
+### Resultados de esta etapa
+
+| Ejecución | Resultado | Duración |
+| --- | --- | --- |
+| Solo API | 8 passed, 16 deselected | 3,01 s |
+| Regresión UI | 16 passed, 8 deselected | 66,59 s |
+| Suite combinada | 24 passed | 62,68 s |
+
+La colección reconoció 24 casos. Se comprobó también un fallo API controlado sin captura y una prueba API con configuración UI inválida; la prueba temporal fue eliminada. Las duraciones son observaciones de esta ejecución y pueden variar.
 
 ## Data-Driven Testing (clase 10)
 
@@ -325,9 +380,9 @@ Al vaciar el carrito, SauceDemo elimina el badge del DOM. Por eso se espera su a
 
 Los locators, las acciones y las lecturas de las páginas están en [pages/](./pages/). Las validaciones con `assert` permanecen en [tests/](./tests/). Esta separación permite ajustar un selector sin reescribir los casos y mantiene cada test centrado en el comportamiento que verifica.
 
-## Resultado actual
+## Resultados de Data-Driven Testing
 
-La colección reconoció **16 casos** sin errores de importación ni lectura. La ejecución UI en headless terminó con **16 passed en 62,16 segundos**:
+La validación previa de Data-Driven Testing reconoció **16 casos** sin errores de importación ni lectura. La ejecución UI en headless terminó con **16 passed en 62,16 segundos**:
 
 | Grupo | Aprobados | Fallos / errores |
 | --- | --- | --- |
