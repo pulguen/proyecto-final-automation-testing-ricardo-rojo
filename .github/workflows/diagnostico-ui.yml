@@ -1,0 +1,76 @@
+name: Diagnóstico UI de interacciones
+
+on:
+  push:
+    branches:
+      - diagnostic/selenium-interacciones-ci
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    name: Diagnóstico ${{ matrix.target.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - name: main
+            ref: 41b97132bb5202ea11661ac49db36bf34bba5511
+          - name: pr6
+            ref: 932a0d8ed11b2ac587178d7d7fa4b5e68c9ba73f
+    env:
+      TARGET_SHA: ${{ matrix.target.ref }}
+      DIAGNOSTIC_OUTPUT: ${{ github.workspace }}/output
+      TARGET_ROOT: ${{ github.workspace }}/project
+      SE_CACHE_PATH: ${{ github.workspace }}/output/selenium-cache
+    steps:
+      - name: Checkout diagnóstico
+        uses: actions/checkout@v5
+        with:
+          ref: diagnostic/selenium-interacciones-ci
+          path: diagnostic-tools
+
+      - name: Checkout commit objetivo
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.target.ref }}
+          path: project
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Verify Google Chrome
+        run: google-chrome --version
+
+      - name: Verify checkouts and runtime
+        shell: bash
+        run: |
+          test "$(git -C project rev-parse HEAD)" = "${TARGET_SHA}"
+          echo "Target SHA: $(git -C project rev-parse HEAD)"
+          echo "Diagnostic SHA: $(git -C diagnostic-tools rev-parse HEAD)"
+          python --version
+          google-chrome --version
+
+      - name: Install dependencies
+        run: python -m pip install -r project/requirements.txt
+
+      - name: Check dependencies
+        run: python -m pip check
+
+      - name: Run selected diagnostic flows
+        working-directory: diagnostic-tools/diagnostics
+        run: python -m pytest -v test_ui_interactions.py --html=../../output/reporte.html --self-contained-html
+
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico-ui-${{ matrix.target.name }}
+          path: output/
+          if-no-files-found: warn
+          retention-days: 14
