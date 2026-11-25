@@ -2,6 +2,8 @@
 
 **Autor:** Ricardo Rojo
 
+[![CI](https://github.com/pulguen/proyecto-final-automation-testing-ricardo-rojo/actions/workflows/ci.yml/badge.svg)](https://github.com/pulguen/proyecto-final-automation-testing-ricardo-rojo/actions/workflows/ci.yml)
+
 El proyecto evoluciona desde la pre-entrega. El framework cuenta con configuración centralizada, evidencias por ejecución y Data-Driven Testing con JSON, CSV y `pytest.mark.parametrize`, aplicando la clase 10 y conservando los ocho casos UI originales.
 
 ## Descripción
@@ -477,3 +479,7 @@ La configuración usa runners `ubuntu-latest`, Python 3.12 y permisos mínimos d
 Cada job usa un directorio de evidencias separado (`reports/runs/api` o `reports/runs/ui`). El paso de `actions/upload-artifact` se ejecuta con `if: always()` y conserva los reportes HTML, logs y screenshots disponibles durante 14 días, incluso cuando las pruebas fallan. El fallo del job se mantiene visible: la subida de evidencias no convierte una ejecución fallida en exitosa.
 
 Para ejecutar el workflow manualmente, abrí la pestaña **Actions**, seleccioná **CI** y utilizá **Run workflow**. Una ejecución exitosa indica que el job correspondiente terminó correctamente; una ejecución fallida debe revisarse junto con los logs del job y el artefacto `reportes-api` o `reportes-ui`. Dentro del artefacto, el `reporte.html` de la carpeta de ejecución muestra el resultado y las capturas UI embebidas cuando estuvieron disponibles; los PNG también se conservan en `screenshots/`.
+
+### Título y descripción de los reportes HTML
+
+El título y la descripción se centralizan en [pytest.ini](./pytest.ini) mediante las opciones `html_report_title` y `html_report_description`. [conftest.py](./conftest.py) registra esas opciones para evitar advertencias de Pytest y utiliza los hooks públicos `pytest_html_report_title` y `pytest_html_results_summary` de pytest-html 4.x. La descripción aparece en el resumen visible y el reporte continúa siendo autocontenido.

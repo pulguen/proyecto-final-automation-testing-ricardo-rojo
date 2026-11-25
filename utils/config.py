@@ -10,6 +10,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SELENIUM_CACHE_DIR = PROJECT_ROOT / ".tools" / "selenium"
 DEFAULT_BASE_URL = "https://www.saucedemo.com/"
 DEFAULT_SELENIUM_TIMEOUT = 10
+DEFAULT_REPORT_TITLE = "Trabajo Final Integrador | Automation Testing"
+DEFAULT_REPORT_DESCRIPTION = (
+    "Framework de automatización de pruebas UI con Selenium y API con Requests, "
+    "desarrollado en Python y Pytest. Incluye Page Object Model, parametrización "
+    "JSON/CSV, reportes HTML, capturas de fallos e integración continua con GitHub Actions."
+)
 
 
 def get_base_url():
